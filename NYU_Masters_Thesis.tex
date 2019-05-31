@@ -7,7 +7,6 @@
 \usepackage{listings}
 \usepackage{graphicx} 
 \usepackage[outdir=./]{epstopdf}
-%\usepackage[labelformat=empty]{caption}
 \usepackage{mathtools,xparse}
 \usepackage{multirow}
 
@@ -25,9 +24,6 @@
 
 \begin{document}
 \doublespacing
-
-%\setcounter{secnumdepth}{5}
-%\setcounter{tocdepth}{4}
 
 
 \begin{titlepage}
@@ -65,6 +61,9 @@
 \begin{abstract}
 Networking devices have traditionally been thought of as fixed-function devices that perform the single task of packet switching very well. However, in recent years, researchers have developed network devices that can be explicitly programmed to perform complex packet processing tasks. These devices, which include routers, network interface cards (NICs), and middleboxes can support applications such as load balancing, heavy-hitter detection, and improved packet scheduling. While greater control over each device allows for better visibility into the network, it is still difficult to program the network as a whole. In the current state, network operators are required to program each individual device using a language such as P4 or Micro-C in order to express a network-wide computation. This thesis presents Sluice, a programming model that takes a high-level specification of a network program, and compiles it into runnable code that can be launched on the programmable devices of network. We describe the design and language features of Sluice and compare it side-by-side to equivalent P4 translations. Finally, we run through several demos where Sluice is used to program a virtual network of programmable switches and hosts in a Mininet emulator.
 \end{abstract}
+
+\newpage
+\section*{Acknowledgements}
 
 \newpage
 \tableofcontents
@@ -230,8 +229,6 @@ packet_parser_condition:
 
 Packets are declared similarly to C structs. Within a packet declaration, users can define custom packet headers which can be used for computation in code snippets. In addition, all (eth/ip/udp/tcp) header fields are supported by default. The \texttt{packet} keyword is followed by a packet\_base and an optional packet\_parser\_condition. These two attributes help Sluice automatically generate a P4 packet header parser. The packet\_base is a string of either $tcp$, $udp$, $ipv4$, or $ethernet$ and represents the header type on which to parse the packet.  Meanwhile, the parser condition defines the header field and value to match incoming packets on. Packets that do not pass the parser condition are immediately sent to the ingress pipeline. However, to restrict the operation of Sluice snippet code to only those packets that passed the condition, a P4 \texttt{if} statement is automatically generated in the ingress control block. In this way, the parser condition allows the operator to conditionally perform computation on different flows.
 
-In \irref{Figure}{pca}, the packet $p$ contains a single field $nhops$ that is used by the operator to maintain a hop count on each packet. It is parsed on the udp $srcPort$ field.  The corresponding P4 header parser and control block are also shown. In particular, the $parse\_udp$ parser shows that headers of packet $p$ (nhops in this example) are extracted only when $\texttt{srcPort}=1234$. In the ingress block, the \texttt{if} statement on lines 2-4 ensures that P4 code corresponding to Sluice snippets are only executed on packets that have $udp.srcPort = 1234$. All other packets are sent to the routing table ipv4\_lpm, provided that they have a valid ipv4 header i.e. they are simply routed and do not affect router state.
-
 \begin{figure}
 \caption{P4 Translation for Sluice Parser Condition}\label{pca}
 \noindent\begin{minipage}{.45\textwidth}
@@ -297,6 +294,11 @@ parser parse_p {
 \end{lstlisting}
 \end{minipage}
 \end{figure}
+
+
+In \irref{Figure}{pca}, the packet $p$ contains a single field $nhops$ that is used by the operator to maintain a hop count on each packet. It is parsed on the udp $srcPort$ field.  The corresponding P4 header parser and control block are also shown. In particular, the $parse\_udp$ parser shows that headers of packet $p$ (nhops in this example) are extracted only when $\texttt{srcPort}=1234$. In the ingress block, the \texttt{if} statement on lines 2-4 ensures that P4 code corresponding to Sluice snippets are only executed on packets that have $udp.srcPort = 1234$. All other packets are sent to the routing table ipv4\_lpm, provided that they have a valid ipv4 header i.e. they are simply routed and do not affect router state.
+
+
 
 \subsection{Snippets}
 \begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize,  numberstyle=\tiny, backgroundcolor = \color{teagreen}, frame=tlrb]
