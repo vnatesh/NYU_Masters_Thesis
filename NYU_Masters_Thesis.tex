@@ -16,6 +16,11 @@
 \usepackage[dvipsnames]{xcolor}
 \usepackage{titlesec}
 \definecolor{teagreen}{rgb}{0.82, 0.94, 0.75}
+\usepackage{hyperref}
+\newcommand{\irref}[2]{\hyperref[#2]{#1~\ref{#2}}}
+
+
+
 \begin{document}
 \doublespacing
 
@@ -86,11 +91,11 @@ general data plane functionality at the level of an entire network, without
 having to individually program each network device.
 
 Prior work has looked at the problem of programming at the level of an entire
-network. In particular, Maple [cite] was an early example of a
+network. In particular, Maple~\cite{maple} was an early example of a
 network-wide programming model designed for OpenFlow switches. Maple
 automatically divided functionality between a stateless component running on
 switches and a stateful component running on the network's controller.
-SNAP [cite] is a more recent example of network-wide programming; unlike
+SNAP~\cite{snap} is a more recent example of network-wide programming; unlike
 Maple, it additionally offloads stateful functionality to switches by
 leveraging stateful processing available in programmable switches.  However,
 both Maple and SNAP cannot express programmable-switch functionality that
@@ -141,7 +146,7 @@ to the backend of the compiler that generates the corresponding P4 program for
 that device, for example bmv2 or Tofino.\footnote{Currently we only support
 bmv2 but plan to support more devices.} 
 
-If successfully compiled into P4, Sluice programs are guaranteed to run at line rate on the switch. However, the need for line rate performance precludes the ability to perform looping in Sluice such as \texttt{for} and \texttt{while}. Although looping semantics can be implemented by recirculating packets back into the ingress pipeline of the switch (to repeat some computation)[cite p4-14 spec], this significantly reduces throughput. Nonetheless, fairly complex algorithms can still be expressed without loops. This is discussed further in the demonstrations section. 
+If successfully compiled into P4, Sluice programs are guaranteed to run at line rate on the switch. However, the need for line rate performance precludes the ability to perform looping in Sluice such as \texttt{for} and \texttt{while}. Although looping semantics can be implemented by recirculating packets back into the ingress pipeline of the switch (to repeat some computation)~\cite{p4Spec}, this significantly reduces throughput. Nonetheless, fairly complex algorithms can still be expressed without loops. This is discussed further in the demonstrations section. 
 
 \newpage
 \section{Design and Implementation}
@@ -533,7 +538,7 @@ action action15 () {
 }
 \end{lstlisting}
 
-Conditional statement handling is slightly more complicated. Sluice programs containing if-else blocks undergo a \textbf{branch removal} step akin to a similar transformation used in the Domino compiler [cite]. Here, any statements inside an if-else block are converted into ternary conditionals. 
+Conditional statement handling is slightly more complicated. Sluice programs containing if-else blocks undergo a \textbf{branch removal} step akin to a similar transformation used in the Domino compiler~\cite{domino}. Here, any statements inside an if-else block are converted into ternary conditionals. 
 
 \begin{lstlisting}[numbers=left, firstnumber=1, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
 import device psa;
@@ -652,11 +657,11 @@ The dependency graph for snippet \texttt{simple\_arithmetic} in listing [cite] i
 \caption{Dependency DAG for Listing [cite]}
 \end{figure}
 
-
+ 
 
 \newpage
 \section{Demonstrations} 
-In this section, we demonstrate Sluice's functionality and ease of use via two examples: traffic matrix generation for network analysis and a streaming join-filter operation. Videos for these two demos can be found at [cite] and [cite] respectively. Before we describe them further, we provide a description of the Sluice simulator.
+In this section, we demonstrate Sluice's functionality and ease of use via two examples: traffic matrix generation for network analysis and a streaming join-filter operation. Videos for these two demos can be found at \cite{traf} and \cite{stream} respectively. Before we describe them further, we provide a description of the Sluice simulator.
 
 \subsection{Sluice Simulator}
 The Sluice simulator is written in python and automates much of the aspects of network-wide programming. The operator need only provide a Sluice program and a topology json file outlining the layout of switches and hosts in the network topology. Given the topology file, the simulator generates arp requests for link layer addressing between hosts, determines the shortest routing paths between hosts, and installs forwarding rules on each switch. It uses annotations in the Sluice program to create independent P4 programs for each snippet and run them on their respective devices. In the case that the operator intends to run multiple snippets on a single switch, these snippets will have to be merged to generate a single P4 program. While snippet merging is not currently supported, this is a desired feature and is discussed in the future work section. 
@@ -760,7 +765,7 @@ The result of \texttt{s1}, (3, 1, 4), now flows to \texttt{s2} where it is filte
 
 It is important to note several caveats to this algorithm. For instance, if there are multiple impressions for the same ad, only a single tuple will be stored on the switch at any time since the primary key ad\_id is duplicated and the corresponding index gets overwritten. This is equivalent to an unresolved hash collision. In this case, it is simple to resolve by tracking impressions with an extra key, for example, an impression\_id that is unique among impressions of a particular ad. 
 
-Another caveat is that the maximum number of unique tuples that can be stored for joining is limited by the total TCAM and SRAM memory of the target hardware. While a capacity of 100 unique ad\_ids is suitable for this demo, whether it is suitable for a different application depends on how fast the streams are being sent. For example, suppose the switch only supports 30Mb of total memory. If impressions arrive at a rate of 30Mb/s and clicks arrive at a slower rate of 10Mb/s, then switch memory will be exhausted in 1 second with a majority of register entries storing tuples for impressions as opposed to clicks. Due to varying send rates, a large time lag ensues between possible impression/click join matches. In addition, since switch memory is quickly exhausted, many tuples are overwritten causing possible matches to not be recognized. Thus the operator may have to fine-tune sending rates to ensure that the probability of failed matches is minimized.    
+Another caveat is that the maximum number of unique tuples that can be stored for joining is limited by the total TCAM and SRAM memory of the target hardware. While a capacity of 100 unique ad\_ids is suitable for this demo, whether it is suitable for a different application depends on how fast the streams are being sent. For example, suppose the switch only supports 30Mb of total memory and all 30Mb are used for storing tuples. If impressions arrive at a rate of 30Mb/s and clicks arrive at a slower rate of 10Mb/s, then switch memory will be exhausted in 1 second with a majority of register entries storing tuples for impressions as opposed to clicks. Due to varying send rates, a large time lag ensues between possible impression/click join matches. In addition, since switch memory is quickly exhausted, many tuples are overwritten causing possible matches to not be recognized. Thus the operator may have to fine-tune sending rates to ensure that the probability of failed matches is minimized.    
 
 \newpage
 \section{Future Work}
@@ -772,7 +777,7 @@ limited support for floating point or complex string operations. Code
 containing such features must be moved to the control plane or an end host data
 plane while at the same time, preserving the original program semantics
 intended by the operator. Doing this automatically would free the Sluice
-programmer from reasoning about these semantics. Consider a case where a switch needs to carry out some computations based on packet headers alone without reading or writing switch-resident state. One example is taking the product of two headers and writing it into a third header without involving any switch state in the process. This pattern occurs in the congestion-control protocol XCP [cite 38], which needs to compute the product of the current RTT and the packet size and divide it by the current congestion window. All three of these variables are present in the packet and need not be computed on the switch. This makes it simpler to offload the computation to an end host where precise floating point division and multiplication are much easier to carry out [cite 36]
+programmer from reasoning about these semantics. Consider a case where a switch needs to carry out some computations based on packet headers alone without reading or writing switch-resident state. One example is taking the product of two headers and writing it into a third header without involving any switch state in the process. This pattern occurs in the congestion-control protocol XCP~\cite{xcp}, which needs to compute the product of the current RTT and the packet size and divide it by the current congestion window. All three of these variables are present in the packet and need not be computed on the switch. This makes it simpler to offload the computation to an end host where precise floating point division and multiplication are much easier to carry out~\cite{sharma}
 
 In certain situations, code movement cannot be performed even when floating point accuracy is desired. Consider the snippet below which computes an exponentially weighted moving average (EWMA with $\alpha=0.2$) of queuing latencies and writes the EWMA to a packet header \texttt{result}. 
 
@@ -797,7 +802,14 @@ snippet ewma() {
 
 The statements computing EWMA include division and multiplication and must accurate to several decimal places. The EWMA itself exists as a persistent variable \texttt{avg} on the switch which is updated with every packet \texttt{p} on the flow \texttt{udp.srcPort=1234}. In addition, it is written to the \texttt{result} header of each packet \texttt{p}. To match these stateful semantics, all statements must be run on the switch and cannot be moved onto the control plane or an end-host. The result must also be approximated with fixed point arithmetic since floating point is not supported in switch hardware. 
 
-Fortunately, it is straightforward to represent a multiplication using bit shifts and adds by writing out both numbers in binary. For instance, say we were multiplying 27 by 5. As shown below, this can be implemented by first shifting 27 left by 2 bits and then adding 27.\\$27 * 5 (1)$\\$= (11011) * (101)$\\$= (11011) * (1 * 2^2 + 0 * 2^1 + 1 * 2^0)$\\$= (11011) << 2 + (11011) << 0$\\$= (11011) << 2 + (11011)$\\Similarly, we can approximate division by treating it as multiplication by the inverse and using right shifts instead of left shifts. Assuming a budget on N number of shifts (and hence N - 1 adds), we can use a lookup table to compute the shift coefficients for each value of the smaller of the two operands. For instance, in the example above where we multiply 27 by 5, this lookup table will tells us that to multiply by 5, we need to use the shift values 2 and 0 if we have a budget of two shifts and the shift value 2 alone if we have a budget of one shift.The more the budget on the number of shifts, the closer we can approximate the original multiplication or division. However, the smaller the budget on the number of shifts, the more we can compress the lookup table. For instance, if we are permitted only one shift, then the lookup table returns the nearest exponent of 2 for each value of the smaller operand, allowing us to significantly compress the lookup table. As one example of compression, assuming 8-bit operands, the shift value for all operands from 17 to 31 will be 4 and can be represented by a single TCAM entry mapping the bit pattern 0001**** to the shift value 4.
+Fortunately, it is straightforward to represent a multiplication using bit shifts and adds by writing out both numbers in binary. For instance, say we were multiplying 27 by 5. As shown below, this can be implemented by first shifting 27 left by 2 bits and then adding 27.\\
+$27 * 5 (1)$\\
+$= (11011) * (101)$\\
+$= (11011) * (1 * 2^2 + 0 * 2^1 + 1 * 2^0)$\\
+$= (11011) << 2 + (11011) << 0$\\
+$= (11011) << 2 + (11011)$\\
+Similarly, we can approximate division by treating it as multiplication by the inverse and using right shifts instead of left shifts. Assuming a budget on N number of shifts (and hence N - 1 adds), we can use a lookup table to compute the shift coefficients for each value of the smaller of the two operands. For instance, in the example above where we multiply 27 by 5, this lookup table will tells us that to multiply by 5, we need to use the shift values 2 and 0 if we have a budget of two shifts and the shift value 2 alone if we have a budget of one shift.
+The more the budget on the number of shifts, the closer we can approximate the original multiplication or division. However, the smaller the budget on the number of shifts, the more we can compress the lookup table. For instance, if we are permitted only one shift, then the lookup table returns the nearest exponent of 2 for each value of the smaller operand, allowing us to significantly compress the lookup table. As one example of compression, assuming 8-bit operands, the shift value for all operands from 17 to 31 will be 4 and can be represented by a single TCAM entry mapping the bit pattern 0001**** to the shift value 4.
 
 \subsection{Supporting multi-tenancy.} Another area of future work is allowing
 Sluice to support multiple tenants with their own Sluice
@@ -807,7 +819,7 @@ virtual topology, the network operator will need to merge all these into one
 data plane implementation that runs on the entire physical network. Extending
 Sluice to support this multi-tenancy use case would allow us to provide the
 same benefits to the data plane that multi-tenant network
-virtualization [cite] provided for the control plane.
+virtualization~\cite{multitenant} provided for the control plane.
 
 
 
@@ -956,7 +968,7 @@ Cond:
 
 \subsection{Sluice Compiler Source Code} 
 
-The Sluice compiler is written in rust while its simulator is written in python and bash. Source code can be found at [cite github]. The lines-of-source breakdown is shown below.
+The Sluice compiler is written in rust while its simulator is written in python and bash. Source code can be found at \cite{sluiceSrc}. The lines-of-source breakdown is shown below.
 
 \begin{center}
  \begin{tabular} {|c c c c c|} 
@@ -983,6 +995,11 @@ TOML & 1 & 1 & 0 & 9 \\
  \hline
 \end{tabular}
 \end{center}
+
+
+\newpage
+\bibliographystyle{unsrt}
+\bibliography{thesis.bib}
 
 
 \end{document}
