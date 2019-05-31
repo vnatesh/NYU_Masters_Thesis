@@ -64,7 +64,7 @@ Networking devices have traditionally been thought of as fixed-function devices 
 
 \newpage
 \section*{Acknowledgements}
-I could not have accomplished this research without the help of several people. First and foremost, I would like to express my deepest thanks to Professor Anirudh Sivaraman for being my advisor. He introduced me to this field and was very patient as I learned new things. He also guided me in the right direction, helping me focus on the important problems and not get sidetracked. I would like to thank Pravein Kannan at NUS. He introduced me to the quirkiness of networking hardware and was helpful in framing key research ideas. I would also like to thank Professor Leslie Greengard and Professor Ravi Netravali at UCLA. They provided excellent advice on how to explain my research to a larger academic community.  Lastly, I would like to thank my friends and family. Without their support over the years, I would not have made it this far. 
+I could not have accomplished this research without the help of several people. First and foremost, I would like to express my deepest thanks to Professor Anirudh Sivaraman for being my advisor. He introduced me to this field and was very patient as I learned new things. He also guided me in the right direction, helping me focus on the important problems and not get sidetracked. I would like to thank Pravein Kannan at NUS. He introduced me to the quirkiness of networking hardware and was helpful in framing key research ideas. I would also like to thank Professor Leslie Greengard and Professor Ravi Netravali at UCLA. They provided excellent advice on how to explain my research to a larger academic community. Lastly, I would like to thank my friends and family. Without their support over the years, I would not have made it this far. 
 
 
 \newpage
@@ -813,7 +813,7 @@ snippet ewma() {
     p.result = avg;
 \end{lstlisting}
 
-The statements computing EWMA include division and multiplication and must accurate to several decimal places. The EWMA itself exists as a persistent variable \texttt{avg} on the switch which is updated with every packet \texttt{p} on the flow \texttt{udp.srcPort=1234}. In addition, it is written to the \texttt{result} header of each packet \texttt{p}. To match these stateful semantics, all statements must be run on the switch and cannot be moved onto the control plane or an end-host. The result must also be approximated with fixed point arithmetic since floating point is not supported in switch hardware. 
+The statements computing EWMA include division and multiplication and must be accurate to several decimal places. The EWMA itself exists as a persistent variable \texttt{avg} on the switch which is updated with every packet \texttt{p} on the flow \texttt{udp.srcPort=1234}. In addition, it is written to the \texttt{result} header of each packet \texttt{p}. To match these stateful semantics, all statements must be run on the switch and cannot be moved onto the control plane or an end-host. The result must also be approximated with fixed point arithmetic since floating point is not supported in switch hardware. 
 
 Fortunately, it is straightforward to represent a multiplication using bit shifts and adds by writing out both numbers in binary. For instance, say we were multiplying 27 by 5. As shown below, this can be implemented by first shifting 27 left by 2 bits and then adding 27.\\
 $27 * 5 (1)$\\
