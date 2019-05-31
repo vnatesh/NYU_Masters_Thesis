@@ -7,7 +7,7 @@
 \usepackage{listings}
 \usepackage{graphicx} 
 \usepackage[outdir=./]{epstopdf}
-\usepackage[labelformat=empty]{caption}
+%\usepackage[labelformat=empty]{caption}
 \usepackage{mathtools,xparse}
 \usepackage{multirow}
 
@@ -19,10 +19,15 @@
 \usepackage{hyperref}
 \newcommand{\irref}[2]{\hyperref[#2]{#1~\ref{#2}}}
 
+\usepackage{subcaption}
+\usepackage{caption}
 
 
 \begin{document}
 \doublespacing
+
+%\setcounter{secnumdepth}{5}
+%\setcounter{tocdepth}{4}
 
 
 \begin{titlepage}
@@ -116,10 +121,10 @@ application offloading.  The benefits of Sluice can be summarized as follows:\\
 \quad  (1) Sluice provides the same functionality as a per-device language like P4 but makes it easier to program the data plane of an entire network by abstracting device-specific architectural details like stateful ALUs, pipelines, etc., and\\
 \quad  (2) Sluice automatically reduces the amount of boilerplate code needed to write data plane functionality. For instance, the 8 line traffic matrix Sluice program (which we demonstrate later) translates into over 200 lines of P4 code. 
 
-\begin{figure}[tp]
+\begin{figure}
 \centering
 \includegraphics[width=140mm,scale=0.7]{figures/sluice_workflow.pdf}
-\caption{Figure 1 - Sluice Workflow}
+\caption{Sluice Workflow}\label{fig1}
 \end{figure}
 
 \newpage
@@ -138,7 +143,7 @@ device-specific variables/attributes for use in code snippets. Sluice also lets
 the programmer restrict snippets to operate on specific flows or IP address
 ranges.
 
-Figure 1 describes the Sluice workflow. The compiler translates each snippet of
+\irref{Figure}{fig1} describes the Sluice workflow. The compiler translates each snippet of
 a sluice program into a device-specific program. After initial parsing, lines
 of code in the snippet are decomposed into a directed acyclic graph (DAG) that
 maps dependencies between variables in each snippet. This graph is then passed
@@ -182,7 +187,7 @@ import:
 
 The import\_id represents the name of an external file in which an operator may declare several target-specific fields. These fields can then be read and used within code snippets. For instance, the bmv2 target supports access to the enqueue depth of the virtual switches in a topology. By default, Sluice supports the P4 portable switch architecture (PSA) fields, defined in the "psa.np" file. 
 
-\begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize]
+\begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize, caption=PSA fields]
 device psa {
   timestamp_rx : bit<48>;
   timestamp_ingress : bit<48>;
@@ -225,15 +230,17 @@ packet_parser_condition:
 
 Packets are declared similarly to C structs. Within a packet declaration, users can define custom packet headers which can be used for computation in code snippets. In addition, all (eth/ip/udp/tcp) header fields are supported by default. The \texttt{packet} keyword is followed by a packet\_base and an optional packet\_parser\_condition. These two attributes help Sluice automatically generate a P4 packet header parser. The packet\_base is a string of either $tcp$, $udp$, $ipv4$, or $ethernet$ and represents the header type on which to parse the packet.  Meanwhile, the parser condition defines the header field and value to match incoming packets on. Packets that do not pass the parser condition are immediately sent to the ingress pipeline. However, to restrict the operation of Sluice snippet code to only those packets that passed the condition, a P4 \texttt{if} statement is automatically generated in the ingress control block. In this way, the parser condition allows the operator to conditionally perform computation on different flows.
 
-In the example below, the packet $p$ contains a single field $nhops$ that is used by the operator to maintain a hop count on each packet. It is parsed on the udp $srcPort$ field.  The corresponding P4 header parser and control block are also shown. In particular, the $parse\_udp$ parser shows that headers of packet $p$ (nhops in this example) are extracted only when $\texttt{srcPort}=1234$. In the ingress block, the \texttt{if} statement on lines 2-4 ensures that P4 code corresponding to Sluice snippets are only executed on packets that have $udp.srcPort = 1234$. All other packets are sent to the routing table ipv4\_lpm, provided that they have a valid ipv4 header i.e. they are simply routed and do not affect router state.
+In \irref{Figure}{pca}, the packet $p$ contains a single field $nhops$ that is used by the operator to maintain a hop count on each packet. It is parsed on the udp $srcPort$ field.  The corresponding P4 header parser and control block are also shown. In particular, the $parse\_udp$ parser shows that headers of packet $p$ (nhops in this example) are extracted only when $\texttt{srcPort}=1234$. In the ingress block, the \texttt{if} statement on lines 2-4 ensures that P4 code corresponding to Sluice snippets are only executed on packets that have $udp.srcPort = 1234$. All other packets are sent to the routing table ipv4\_lpm, provided that they have a valid ipv4 header i.e. they are simply routed and do not affect router state.
 
+\begin{figure}
+\caption{P4 Translation for Sluice Parser Condition}\label{pca}
 \noindent\begin{minipage}{.45\textwidth}
-\begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize, caption={Sluice Parser Condition},frame=tlrb]{Name}
+\begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize, title={Sluice Parser Condition},frame=tlrb]{Name}
 packet p: udp(srcPort:1234) {
   nhops : bit<32>;
 }
 \end{lstlisting}
-\begin{lstlisting}[numbers=left, firstnumber=1, caption={P4 Ingress Control Block}, basicstyle=\linespread{1.3}\scriptsize, frame=tlrb]
+\begin{lstlisting}[numbers=left, firstnumber=1, title={P4 Ingress Control Block}, basicstyle=\linespread{1.3}\scriptsize, frame=tlrb]
 control ingress {
   if (udp.srcPort == 1234 && 
    ethernet.etherType == ETHERTYPE_IPV4 
@@ -253,7 +260,7 @@ control ingress {
 
 \end{minipage}\hfill
 \begin{minipage}{.45\textwidth}
-\begin{lstlisting}[caption={P4 Parser},frame=tlrb, basicstyle=\linespread{1.08}\scriptsize]{Name}
+\begin{lstlisting}[title={P4 Parser},frame=tlrb, basicstyle=\linespread{1.08}\scriptsize]
 parser start {
     return parse_ethernet;
 }
@@ -289,7 +296,7 @@ parser parse_p {
 }
 \end{lstlisting}
 \end{minipage}
-
+\end{figure}
 
 \subsection{Snippets}
 \begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize,  numberstyle=\tiny, backgroundcolor = \color{teagreen}, frame=tlrb]
@@ -316,7 +323,7 @@ device_vector:
 \end{lstlisting}
 
 Device annotations are indicated by an '@' symbol and are used to control the placement of snippets on the various devices of a topology. For instance, the annotation below indicates that the snippet $test$ is to be translated into P4 for the bmv2 device\_type and that it should only run on switches $s1$ and $s2$. After program compilation, this annotation is used by the control plane to automatically launch snippet P4 code on the annotated devices. By convention, if there is only a single snippet, Sluice installs that single snippet on all network devices.
-\begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize,  numberstyle=\tiny, frame=tlrb]
+\begin{lstlisting}[caption=Device Annotation, basicstyle=\linespread{1.3}\scriptsize,  numberstyle=\tiny, frame=tlrb]
 @ bmv2 : s1, s2 ;
 snippet test() {}
 \end{lstlisting}
@@ -369,9 +376,9 @@ The first component of a snippet is the variable declaration section. Sluice sup
 
 Transient variables are local variables initialized to zero by default but may be initialized by the operator. As packets flow through the switch, they can be updated using packet header values, other transient variables, or persistent variables. However, these variables are only valid for the current packet being handled by the switch. Once this packet exits and another packet enters the switch, all transient variables are reset to zero or their initial value. Transient variables are translated into P4 metadata by the Sluice compiler. It is important to note that transient variables cannot be arrays like persistent variables as P4 itself does not support arrays in metadata. 
 
-Persistent variables, on the other hand, represent router state and translate into register arrays in P4. They are initialized to zero by default but can also be initialized by the operator. However, a write or update to a persistent variable is permanent i.e. the value stored in a persistent variable "persists" as new packets flow through the switch. Persistent variables can be updated using packet header values, transient variables, or other persistent variables, allowing them to keep track of various metrics in a network. Using our snippet \textit{test} from earlier, the code below demonstrates the syntax for declaring transient and persistent variables. 
+Persistent variables, on the other hand, represent router state and translate into register arrays in P4. They are initialized to zero by default but can also be initialized by the operator. However, a write or update to a persistent variable is permanent i.e. the value stored in a persistent variable "persists" as new packets flow through the switch. Persistent variables can be updated using packet header values, transient variables, or other persistent variables, allowing them to keep track of various metrics in a network. Using our snippet \texttt{test} from earlier, \irref{Listing}{svd} demonstrates the syntax for declaring transient and persistent variables. 
 
-\begin{lstlisting}[basicstyle=\linespread{1.3}\scriptsize,  numberstyle=\tiny, frame=tlrb]
+\begin{lstlisting}[caption={Sluice Variable Declarations}\label{svd}, basicstyle=\linespread{1.3}\scriptsize,  numberstyle=\tiny, frame=tlrb]
 packet p: udp(srcPort:1234) {
   nhops : bit<32>;
 }
@@ -384,10 +391,12 @@ snippet test() {
 }
 \end{lstlisting}
 
-Persistent variable initial values are set by the control plane. Once the compiler translates the Sluice program into P4, it scans the program for initial values and generates commands that the control plane will execute to populate register arrays with these values, before any packets start flowing through the network. For example, $reg1$ has an initial value of 8 at index 2 so the corresponding command would be \texttt{register\_write reg1 2 8}. Transient variables are initialized via the \texttt{set\_metadata} function in the P4 header parser. The code below shows the P4 representation for transient and persistent variables in the \textit{test} snippet, initial value control plane table entries for persistent vars \texttt{reg1} and \texttt{reg2}, and the header parser where the transient var $a$ is set to 10. If you recall from the discussion on packet parser conditions, the header parser \texttt{parse\_p} is only applied to packets \texttt{p} in the flow \texttt{udp.srcPort = 1234}. This restricts transient var initialization to packets on this flow alone, preventing manipulation of router state (metadata) by other packets flowing through the network.
+Persistent variable initial values are set by the control plane. Once the compiler translates the Sluice program into P4, it scans the program for initial values and generates commands that the control plane will execute to populate register arrays with these values, before any packets start flowing through the network. For example, $reg1$ has an initial value of 8 at index 2 so the corresponding command would be \texttt{register\_write reg1 2 8}. Transient variables are initialized via the \texttt{set\_metadata} function in the P4 header parser. \irref{Figure}{p4Decl} shows the P4 representation for transient and persistent variables in the \textit{test} snippet, initial value control plane table entries for persistent vars \texttt{reg1} and \texttt{reg2}, and the header parser where the transient var $a$ is set to 10. If you recall from the discussion on packet parser conditions, the header parser \texttt{parse\_p} is only applied to packets \texttt{p} in the flow \texttt{udp.srcPort = 1234}. This restricts transient var initialization to packets on this flow alone, preventing manipulation of router state (metadata) by other packets flowing through the network.
 
+\begin{figure}
+\caption{P4 Translation for Sluice Declarations}\label{p4Decl}
 \noindent\begin{minipage}{.45\textwidth}
-\begin{lstlisting}[caption={P4 Variable Declarations} ,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[title={P4 Variable Declarations} ,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 header_type metadata_t { 
     fields {
         a : 32;
@@ -407,13 +416,13 @@ register reg2 {
 \end{lstlisting}
 \end{minipage}\hfill
 \begin{minipage}{.45\textwidth}
-\begin{lstlisting}[caption={Control Plane Initial Value Entries} ,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[title={Control Plane Initial Value Entries} ,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 register_write reg1 0 4
 register_write reg1 1 1
 register_write reg1 2 8
 register_write reg2 0 0
 \end{lstlisting}
-\begin{lstlisting}[caption=Transient Var Metadata Initialization,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[title=Transient Var Metadata Initialization,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 parser parse_p {
     extract(p);
     set_metadata(mdata.a,10);
@@ -421,6 +430,7 @@ parser parse_p {
 }
 \end{lstlisting}
 \end{minipage}
+\end{figure}
 
 Packet headers can be accessed, but not declared, in P4 snippets. The operator may read-write to any packet header field supported by default (eth/ip/tcp/udp) as well as any headers defined in packet declarations by the user. Header fields are accessed via dot notation separating the packet type and header field name, for example, \texttt{ipv4.srcAddr}. They will be used in several Sluice examples that follow.
 
@@ -484,13 +494,13 @@ Ternary conditional assignment statements are also supported in Sluice. These ar
 
 A variety of arithmetic, bitwise, and comparison operations are supported for computation in statements including bitwise AND, bitwise OR, left shift, right shift, addition, subtraction, equal, not-equal, greater-than, less-than, LEQ, and GEQ. Although multiplication and division are not currently supported, strategies for dealing with them are discussed in future sections. 
 
-Through these features, statements allow the operator to perform computation via read-write to packet headers, transient variables, and persistent variables. The example below demonstrates a Sluice program where several transient and persistent variables are declared, some computation is performed, and either variable \texttt{b} or \texttt{reg2} is written to the packet header \texttt{result} depending on the value of \texttt{c}. A simple linear topology \texttt{h1-s1-h2} is used where the snippet \texttt{simple\_arithmetic} is run on \texttt{s1}. The top terminal screen shows the packet \texttt{p} being sent from host h1 with header \texttt{result} initially set to 0. The bottom screen shows \texttt{p} being received at host h2 with the header result updated with the expected value of 14.
+Through these features, statements allow the operator to perform computation via read-write to packet headers, transient variables, and persistent variables. \irref{Figure}{arith} demonstrates a Sluice program where several transient and persistent variables are declared, some computation is performed, and either variable \texttt{b} or \texttt{reg2} is written to the packet header \texttt{result} depending on the value of \texttt{c}. A simple linear topology \texttt{h1-s1-h2} is used where the snippet \texttt{simple\_arithmetic} is run on \texttt{s1}. The top terminal screen shows the packet \texttt{p} being sent from host h1 with header \texttt{result} initially set to 0. The bottom screen shows \texttt{p} being received at host h2 with the header result updated with the expected value of 14.
 
 \begin{figure}
-\caption{Figure x : Simple Arithmetic Example}
+\caption{Simple Arithmetic Example}\label{arith}
 \captionsetup{justification=centering, font=footnotesize,labelfont=footnotesize}
 \begin{minipage}{.46\textwidth} 
-\begin{lstlisting}[numbers=left, firstnumber=1, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[caption={simple\_arithmetic snippet}\label{nobrn}, numbers=left, firstnumber=1, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 import device psa;
 
 packet p: udp(srcPort:1234) {
@@ -517,16 +527,16 @@ snippet simple_arithmetic() {
 \qquad
 \begin{minipage}{0.45\textwidth} 
 \includegraphics[scale=.6]{figures/arith_ex_1} 
-\caption{H1 sends packet p with result initialized to 0\newline}
+\caption*{H1 sends packet p with result initialized to 0\newline}
 
 \includegraphics[scale=.6]{figures/arith_ex_2}
-\caption{H2 Receives p with a result header of 14}
+\caption*{H2 Receives p with a result header of 14}
 \end{minipage}
 \end{figure}
 
-All statements in Sluice map to P4 tables and actions. For instance, for the unconditional statement in line 19 of the simple arithmetic example, several P4 actions are generated: one to read \texttt{reg2} into metadata, one to read \texttt{reg1} at index \texttt{a} into metadata, and one to add \texttt{reg1} and \texttt{reg2} metadata and store the result in the transient var \texttt{b}. These actions are shown below.   
+All statements in Sluice map to P4 tables and actions. For instance, for the unconditional statement in line 19 of the simple arithmetic example, several P4 actions are generated: one to read \texttt{reg2} into metadata, one to read \texttt{reg1} at index \texttt{a} into metadata, and one to add \texttt{reg1} and \texttt{reg2} metadata and store the result in the transient var \texttt{b}. These actions are shown in \irref{Listing}{ln19}.   
 
-\begin{lstlisting}[caption=Line 19 Actions,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[caption={P4 Actions for Line 19 of simple\_arithmetic snippet}\label{ln19}, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 action action13 () {
     register_read(mdata.reg1, reg1, mdata.a);
 }
@@ -540,7 +550,7 @@ action action15 () {
 
 Conditional statement handling is slightly more complicated. Sluice programs containing if-else blocks undergo a \textbf{branch removal} step akin to a similar transformation used in the Domino compiler~\cite{domino}. Here, any statements inside an if-else block are converted into ternary conditionals. 
 
-\begin{lstlisting}[numbers=left, firstnumber=1, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[caption={simple\_arithmetic snippet}\label{brn} after branch removal, numbers=left, firstnumber=1, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 import device psa;
 
 packet p: udp(srcPort:1234) {
@@ -566,15 +576,15 @@ snippet simple_arithmetic() {
 }
 \end{lstlisting}
 
-In Figure [cite] line 15 of the \texttt{simple\_arithmetic} snippet, the assignment of \texttt{reg1[a]} to RHS \texttt{reg2 + b} is conditional on \texttt{a} being greater than \texttt{reg2}. Listing [cite] shows this same snippet with branches removed. To remove branches this, a new transient condition variable \texttt{if\_block\_tmp\_1} is generated. It is then set to the single bit result of the original \texttt{if} statement comparison \texttt{a > reg2}. Another transient variable \texttt{tmp\_0\_if\_1} is used to store the value of the RHS, which is used only when the \texttt{if} condition is satisfied i.e. when \texttt{if\_block\_tmp\_1 = 1}. The final conditional assignment to \texttt{reg1[a]} is expressed as a ternary conditional on line 18. If \texttt{if\_block\_tmp\_1 = 1}, \texttt{reg1[a]} is assigned to the RHS, otherwise it is assigned to itself i.e. left alone. A similar ternary assignment based on the condition variable \texttt{if\_block\_tmp\_1} is also created for \texttt{reg2} on line 19. 
+In \irref{Listing}{nobrn} line 15 of the \texttt{simple\_arithmetic} snippet, the assignment of \texttt{reg1[a]} to RHS \texttt{reg2 + b} is conditional on \texttt{a} being greater than \texttt{reg2}. \irref{Listing}{brn} shows this same snippet with branches removed. To remove branches this, a new transient condition variable \texttt{if\_block\_tmp\_1} is generated. It is then set to the single bit result of the original \texttt{if} statement comparison \texttt{a > reg2}. Another transient variable \texttt{tmp\_0\_if\_1} is used to store the value of the RHS, which is used only when the \texttt{if} condition is satisfied i.e. when \texttt{if\_block\_tmp\_1 = 1}. The final conditional assignment to \texttt{reg1[a]} is expressed as a ternary conditional on line 18. If \texttt{if\_block\_tmp\_1 = 1}, \texttt{reg1[a]} is assigned to the RHS, otherwise it is assigned to itself i.e. left alone. A similar ternary assignment based on the condition variable \texttt{if\_block\_tmp\_1} is also created for \texttt{reg2} on line 19. 
 
-Branch removal leads to a sequence of ternary assignments which are in turn converted into P4 match-action tables by the Sluice compiler. Regular assignment statements are converted into a table with a single default action corresponding to the assignment. However, ternary conditional assignments are converted into a table with a match on the binary condition bit and the two corresponding actions. The first action represents assignment to the first ternary operand (in case the condition bit is true or 1,) while the second represents assignment to the second ternary operand (in case the condition bit is false or 0). Sluice populates the control plane with these table entries before packets start flowing through the network. The value of the condition bit is set in the P4 ingress control block Figure [cite] displays the compiler-generated P4 tables, actions, ingress control, and control plane entries corresponding to the Sluice code in lines 16-18 of listing [cite]. Note that the condition bit is only set to 1 (via table2, action2) if \texttt{mdata.a > mdata.reg2} in the ingress control block. 
+Branch removal leads to a sequence of ternary assignments which are in turn converted into P4 match-action tables by the Sluice compiler. Regular assignment statements are converted into a table with a single default action corresponding to the assignment. However, ternary conditional assignments are converted into a table with a match on the binary condition bit and the two corresponding actions. The first action represents assignment to the first ternary operand (in case the condition bit is true or 1,) while the second represents assignment to the second ternary operand (in case the condition bit is false or 0). Sluice populates the control plane with these table entries before packets start flowing through the network. The value of the condition bit is computed in the P4 ingress control block. \irref{Figure}{condP4} displays the compiler-generated P4 tables, actions, ingress control, and control plane entries corresponding to the Sluice code in lines 16-18 of \irref{Listing}{brn}. Note that the condition bit is only set to 1 (via table2, action2) if \texttt{mdata.a > mdata.reg2} in the ingress control block. 
 
 \begin{figure}
-\caption{Figure x : Conditional Statement P4 Translation}
+\caption{P4 Translation for Sluice Conditional Statement}\label{condP4}
 \captionsetup{justification=centering, font=footnotesize,labelfont=footnotesize}
 \begin{minipage}{.46\textwidth} 
-\begin{lstlisting}[caption=P4 Tables, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[title=P4 Match Action Tables, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 table table2 {
     actions {
         action2;
@@ -608,7 +618,7 @@ table table6 {
 \end{minipage}
 \qquad
 \begin{minipage}{0.515\textwidth} 
-\begin{lstlisting}[caption=P4 Actions, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[title=P4 Actions, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 action action2 () {
     modify_field(mdata.if_block_tmp_1, 1); 
 }
@@ -627,14 +637,14 @@ action action6 () {
 action action7 () {
 }
 \end{lstlisting}
-\begin{lstlisting}[caption=P4 Ingress Control, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[title=P4 Ingress Control, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 if (mdata.a > mdata.reg2) {
     apply(table2);
 } else {
     apply(table3);
 }
 \end{lstlisting}
-\begin{lstlisting}[caption=Control Plane Entries, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[title=Control Plane Entries, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 table_set_default table4 action4
 table_set_default table5 action5
 table_add table6 action6 1 => 
@@ -649,12 +659,12 @@ While branch removal does not improve nor significantly degrade performance, it 
 \subsection{Dependency DAG}
 The Sluice model allows the possibility for statements to be moved between snippets i.e. between devices. However code movement is inherently dangerous as the semantics of the new program must be the same as those intended by the operator in the original snippet. Consider a simple unconditional assignment statement in snippet A that is moved to snippet B. If the lvalue variable is read again in snippet A (read after write RAW), movement of the statement onto snippet B may change future values of certain variables in snippet A.  To keep track of these variable dependencies within a snippet, a snippet is decomposed into \texttt{atoms} and a directed acyclic graph (DAG) is constructed from these atoms (nodes in the DAG). An atom is a line or the smallest unit of a code in Sluice that needs to be translated to P4. An atom could be a variable declaration, conditional statement, or unconditional statement. A dependency between individual atoms could be RAW, write after write (WAW), or write after read (WAR). This DAG construction is necessary to maintain consistency when performing translation/movement, and to map the stages in switch-pipeline accordingly \footnote{Pipeline stage mapping is relevant for the Tofino architecture, which is not currently supported.}. After the branch removal step, Sluice builds the DAG by maintaining the next and previous atoms for each atom in the snippet. 
 
-The dependency graph for snippet \texttt{simple\_arithmetic} in listing [cite] is shown in Figure [cite]. The top layer of nodes represents the snippet variable declarations. Arrows represent dependencies between variables in the parent and child nodes. For example, we can trace the use of transient variable \texttt{a} in statements of the snippet. The dependency path for \texttt{a} touches the following nodes in order: \texttt{transient a} $\longrightarrow$ \texttt{if\_block\_tmp\_1 = a > reg2} $\longrightarrow$ \\ \texttt{reg1[a] = if\_block\_tmp\_1 ? tmp\_0\_if\_1 : reg1[a]} $\longrightarrow$ \texttt{c = a > reg2} $\longrightarrow$ \\ \texttt{b = reg1[a] + reg2}.
+The dependency graph for \irref{Listing}{brn} is shown in \irref{Figure}{dag}. The top layer of nodes represents the snippet variable declarations. Arrows represent dependencies between variables in the parent and child nodes. For example, we can trace the use of transient variable \texttt{a} in statements of the snippet. The dependency path for \texttt{a} touches the following nodes in order: \texttt{transient a} $\longrightarrow$ \texttt{if\_block\_tmp\_1 = a > reg2} $\longrightarrow$ \\ \texttt{reg1[a] = if\_block\_tmp\_1 ? tmp\_0\_if\_1 : reg1[a]} $\longrightarrow$ \texttt{c = a > reg2} $\longrightarrow$ \\ \texttt{b = reg1[a] + reg2}.
 
 \begin{figure}
 \centering
 \includegraphics[width=175mm,scale=1]{figures/dependency_dag.pdf}
-\caption{Dependency DAG for Listing [cite]}
+\caption{Dependency DAG for \irref{Listing}{brn} }\label{dag}
 \end{figure}
 
  
@@ -678,14 +688,13 @@ Persistent switch state in registers can be read/written to using the simulator.
 
 Figure 2 displays the Mininet network topology for our traffic matrix demo.
 Packets are sent over UDP from each host to all other hosts according to a
-Poisson traffic model with mean inter-arrival time of 0.5 seconds. The codelet
-below is our Sluice program with a single snippet \texttt{traffic\_example}
+Poisson traffic model with mean inter-arrival time of 0.5 seconds. \irref{Listing}{slTraf} is our Sluice program with a single snippet \texttt{traffic\_example}
 that is launched on all switches of the network. To run the simulation, the
 user passes the Sluice program and network topology to the compiler. The
 compiler generates P4 code to run on each switch as well as control plane table
 entries for routing packets through the topology.  
 
-\begin{lstlisting}[caption=Sluice Traffic\_Example, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[caption={Sluice Traffic\_Example}\label{slTraf}, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 import device psa;
 
 packet p: udp(srcPort:1234)
@@ -697,8 +706,8 @@ snippet traffic_example()
   cnt[psa.ingress_port] = cnt[psa.ingress_port] + 1;
   p.nhops = p.nhops + 1;
 \end{lstlisting}
-The codelet below shows the corresponding P4 actions generated by the Sluice compiler to execute the statements in snippet \texttt{traffic\_example}.
-\begin{lstlisting}[caption=P4 Actions For Traffic\_Example,frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\irref{Listing}{p4Traf} shows the corresponding P4 actions generated by the Sluice compiler to execute the statements in snippet \texttt{traffic\_example}.
+\begin{lstlisting}[caption={P4 Actions For Traffic\_Example}\label{p4Traf}, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
 action action1 () {
     register_read(mdata.cnt, cnt, standard_metadata.ingress_port);
 }
@@ -714,7 +723,7 @@ action action3 () {
 \begin{figure}
 \centering
 \includegraphics[width=160mm,scale=0.7]{figures/exp_obs_cdf}
-\caption{CDF of Packet Rate on link s1-s3}
+\caption{CDF of Packet Rate on link s1-s3}\label{cdf}
 \end{figure}
 
 This demo shows how a simple Sluice program can be used to enable each switch
@@ -727,7 +736,7 @@ tracks how many packets have entered through that ingress port. Aggregated over
 all switches, these counters represent a matrix measuring each link's
 usage in the network at a given time. This matrix (residing on the whole
 network) is then queried once every second from the control plane to generate
-time-series plots of link-utilization for each link. Figure 3 displays the cumulative
+time-series plots of link-utilization for each link. \irref{Figure}{cdf} displays the cumulative
 histogram of packet rates on link s1-s3 after collecting data for 15 minutes.
 The expected CDF of packet rates \texttt{Poisson}($\mu = 2$
 packets/sec) is also plotted to confirm the accuracy of the Mininet emulation.
@@ -737,7 +746,7 @@ packets/sec) is also plotted to confirm the accuracy of the Mininet emulation.
 \begin{figure}
 \centering
 \includegraphics[width=165mm]{figures/streaming_example}
-\caption{Streaming example topology, data flow, and code placement on switches}
+\caption{Streaming example topology, data flow, and code placement on switches}\label{str}
 \end{figure}
 
 This example demonstrates a simple join-filter operation between two streams of
@@ -745,7 +754,7 @@ tuples. Expressing \texttt{join} in Sluice requires only 31 lines whereas the eq
 
 A stream is an unbounded table where a packet \texttt{p} represents a tuple of
 data (\texttt{ad\_id, impression\_time, click\_time}) enclosed in a custom
-header. The operator wishes to correlate the two streams to determine the time lag between a user seeing the ad with \texttt{ad\_id = 7} and clicking that same ad. The topology in Figure [cite fig num] describes the data flow and shows how an
+header. The operator wishes to correlate the two streams to determine the time lag between a user seeing the ad with \texttt{ad\_id = 7} and clicking that same ad. The topology in \irref{Figure}{str} describes the data flow and shows how an
 operator query runs on the switches of the network. Host 1 sends a stream of ad
 impressions with \texttt{udp.srcPort = 11111} while Host 2 sends a stream of ad clicks with \texttt{udp.srcPort = 22222} . The two streams are
 joined on the \texttt{ad\_id} field at s1 (which runs snippet \texttt{join}) and filtered at s2 (which runs snippet \texttt{filter}) when \texttt{ad\_id = 7}. The final result is sent to h3. The MySQL query corresponding to this example is shown below.
@@ -779,9 +788,9 @@ plane while at the same time, preserving the original program semantics
 intended by the operator. Doing this automatically would free the Sluice
 programmer from reasoning about these semantics. Consider a case where a switch needs to carry out some computations based on packet headers alone without reading or writing switch-resident state. One example is taking the product of two headers and writing it into a third header without involving any switch state in the process. This pattern occurs in the congestion-control protocol XCP~\cite{xcp}, which needs to compute the product of the current RTT and the packet size and divide it by the current congestion window. All three of these variables are present in the packet and need not be computed on the switch. This makes it simpler to offload the computation to an end host where precise floating point division and multiplication are much easier to carry out~\cite{sharma}
 
-In certain situations, code movement cannot be performed even when floating point accuracy is desired. Consider the snippet below which computes an exponentially weighted moving average (EWMA with $\alpha=0.2$) of queuing latencies and writes the EWMA to a packet header \texttt{result}. 
+In certain situations, code movement cannot be performed even when floating point accuracy is desired. Consider the snippet in \irref{Listing}{ewma} which computes an exponentially weighted moving average (EWMA with $\alpha=0.2$) of queuing latencies and writes the EWMA to a packet header \texttt{result}. 
 
-\begin{lstlisting}[frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]{Name}
+\begin{lstlisting}[caption={EWMA}\label{ewma}, frame=tlrb, basicstyle=\linespread{1.3}\scriptsize]
 import device psa;
 
 packet p: udp(srcPort:1234)
